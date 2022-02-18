@@ -1,0 +1,109 @@
+---
+title: "Predict Student's Final Grade"
+output: html_notebook
+---
+
+<p> 
+Created by Jonathan Calderon Chavez for the 2nd Annual CSEDM Data Challenge - Track 2 
+<br> loosely based on  Yang Azure's naive_model 
+</p>
+
+<p> <b> Install/Importing ML Libraries </b> </p>
+```{r}
+library(tidyverse)
+library(BBmisc)
+library(caret)
+```
+
+<p>Loading Student Training Data </P>
+```{r}
+# Main path to data set
+base_dir <- "/Users/jcalderonchavez/Documents/MachineLearning/Datasets/S19_Release_6_28_21.zip" 
+
+# path to subject.csv from the data set dir
+subject_path  <- "Train/Data/LinkTables/Subject.csv"
+
+# combine paths
+train_subjectID_and_grades_path <- paste(base_dir, subject_path, sep="/")
+
+# read data from subject.csv
+train_subjectID_and_grades_data <- read_csv(train_subjectID_and_grades_path)
+```
+
+<p> View Table </p>
+```{r}
+
+train_subjectID_and_grades_data
+
+# here we separate the labels
+training_labels <- train_subjectID_and_grades_data["X-Grade"]
+student_id  <-  train_subjectID_and_grades_data["SubjectID"]
+training_labels
+student_id
+```
+
+<p> Hand Crafted Feature Extraction Algorithm </p>
+```{r}
+find_avg_attempts = function(student_instance, early_dataset){
+  
+  # This is get the all data related to the current student
+  first_half_data <- filter(early_dataset, SubjectID == student_instance)
+  
+  # find avg number of attempts
+  avg_attempts <- median(first_half_data$Attempts)
+}
+```
+
+```{r}
+find_percent_CorrectEventually = function(student_instance, early_dataset){
+  
+  # This is get the all data related to the current student
+  first_half_data <- filter(early_dataset, SubjectID == student_instance)
+  
+  # find percent of time student gets the right answer eventually
+  PerCorrectEventually <- mean(first_half_data$CorrectEventually)
+}
+```
+
+<p> Load in the Early semester Performance</p>
+``` {r}
+# loading early data set
+early_dataset_path <- paste(base_dir, "Train/early.csv", sep="/")
+early_dataset <- read_csv(early_dataset_path)
+```
+<p> Feature Extraction on the training data </p>
+``` {r}
+# find the avg number of attempts 
+student_id <- student_id %>% 
+  rowwise()  %>%
+  mutate(avg_attempts = find_avg_attempts(SubjectID, early_dataset))
+
+# find the percent of time student gets the right answer, eventually
+student_id <- student_id %>% 
+  rowwise()  %>%
+  mutate(per_CorrectEventually = 
+           find_percent_CorrectEventually(SubjectID,early_dataset))
+
+student_features <- tibble(student_id)
+student_features <- select(student_features, -c(SubjectID))
+student_features
+```
+
+<p> Standardize Features  </p>
+
+``` {r}
+student_features <- 
+  student_features %>%
+  mutate(across(c("avg_attempts", "per_CorrectEventually"), normalize))
+
+student_features
+```
+<p> Train Simple ML Model  </p>
+``` {r}
+
+```
+
+<p> Evaluation - Calculate Metrics </p>
+``` {r}
+
+```

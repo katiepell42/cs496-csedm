@@ -3,25 +3,36 @@ title: "Predict Student's Final Grade"
 output: html_notebook
 ---
 
-<p> 
-Created by Jonathan Calderon Chavez for the 2nd Annual CSEDM Data Challenge - Track 2 
-<br> loosely based on  Yang Azure's naive_model 
+<p>
+
+Created by Jonathan Calderon Chavez for the 2nd Annual CSEDM Data Challenge - Track 2 <br> loosely based on Yang Azure's naive_model
+
 </p>
 
-<p> <b> Install/Importing ML Libraries </b> </p>
+<p>
+
+<b> Install/Importing ML Libraries </b>
+
+</p>
+
 ```{r}
 library(tidyverse)
 library(BBmisc)
 library(caret)
 ```
 
-<p>Loading Student Training Data </P>
+<p>
+
+Loading Student Training Data
+
+</P>
+
 ```{r}
 # Main path to data set
-base_dir <- "/Users/jcalderonchavez/Documents/MachineLearning/Datasets/S19_Release_6_28_21.zip" 
+base_dir <- "~/spring2022/cs496/cs496_project" 
 
 # path to subject.csv from the data set dir
-subject_path  <- "Train/Data/LinkTables/Subject.csv"
+subject_path  <- "Subject.csv"
 
 # combine paths
 train_subjectID_and_grades_path <- paste(base_dir, subject_path, sep="/")
@@ -30,7 +41,12 @@ train_subjectID_and_grades_path <- paste(base_dir, subject_path, sep="/")
 train_subjectID_and_grades_data <- read_csv(train_subjectID_and_grades_path)
 ```
 
-<p> View Table </p>
+<p>
+
+View Table
+
+</p>
+
 ```{r}
 
 train_subjectID_and_grades_data
@@ -42,7 +58,12 @@ training_labels
 student_id
 ```
 
-<p> Hand Crafted Feature Extraction Algorithm </p>
+<p>
+
+Hand Crafted Feature Extraction Algorithm
+
+</p>
+
 ```{r}
 find_avg_attempts = function(student_instance, early_dataset){
   
@@ -58,21 +79,41 @@ find_avg_attempts = function(student_instance, early_dataset){
 find_percent_CorrectEventually = function(student_instance, early_dataset){
   
   # This is get the all data related to the current student
-  first_half_data <- filter(early_dataset, SubjectID == student_instance)
+  first_half_data <- filter(early_dataset, SubjectID == student_instance) # All of this student's problem entries from the the early part of the semester
   
   # find percent of time student gets the right answer eventually
-  PerCorrectEventually <- mean(first_half_data$CorrectEventually)
-}
+  PerCorrectEventually <- mean(first_half_data$CorrectEventually) # Average number correct for all of this student's problems that are attempted
+
+  
+  # final_grade <- 100
+  }
 ```
 
-<p> Load in the Early semester Performance</p>
-``` {r}
+```{r}
+# get_final_grade = function(student, dataset) {
+#   grade <- dataset[student, "X-Grade"]
+# }
+```
+
+<p>
+
+Load in the Early semester Performance
+
+</p>
+
+```{r}
 # loading early data set
 early_dataset_path <- paste(base_dir, "Train/early.csv", sep="/")
 early_dataset <- read_csv(early_dataset_path)
 ```
-<p> Feature Extraction on the training data </p>
-``` {r}
+
+<p>
+
+Feature Extraction on the training data
+
+</p>
+
+```{r}
 # find the avg number of attempts 
 student_id <- student_id %>% 
   rowwise()  %>%
@@ -84,26 +125,60 @@ student_id <- student_id %>%
   mutate(per_CorrectEventually = 
            find_percent_CorrectEventually(SubjectID,early_dataset))
 
+# student_id <- student_id %>%
+#   rowwise() %>%
+#   mutate(final_grade =
+#            get_final_grade(SubjectID, train_subjectID_and_grades_data))
+
+
 student_features <- tibble(student_id)
 student_features <- select(student_features, -c(SubjectID))
 student_features
+ # Ask Dr. Rivoire about this??
+
+```
+```{r}
+attempt_percent_plot <- student_features %>% 
+  ggplot(aes(x = avg_attempts, y = per_CorrectEventually)) +
+  geom_point() +
+  labs(x = "Average attempts", y = "% Correct Eventually")
+attempt_percent_plot
+```
+```{r}
+model <- lm(avg_attempts~per_CorrectEventually, data=student_features)
+summary(model)
 ```
 
-<p> Standardize Features  </p>
+<p>
 
-``` {r}
+Standardize Features
+
+</p>
+
+```{r}
 student_features <- 
   student_features %>%
   mutate(across(c("avg_attempts", "per_CorrectEventually"), normalize))
 
 student_features
 ```
-<p> Train Simple ML Model  </p>
-``` {r}
+
+<p>
+
+Train Simple ML Model
+
+</p>
+
+```{r}
 
 ```
 
-<p> Evaluation - Calculate Metrics </p>
-``` {r}
+<p>
+
+Evaluation - Calculate Metrics
+
+</p>
+
+```{r}
 
 ```

@@ -1,6 +1,8 @@
 ---
 title: "Predict Student's Final Grade"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 <p>
@@ -29,8 +31,8 @@ Loading Student Training Data
 
 ```{r}
 # Main path to data set
-base_dir <- "~/spring2022/cs496/cs496_project" 
-
+# base_dir <- "~/spring2022/cs496/cs496_project" 
+base_dir <- "~/csedm/cs496-csedm-main"
 # path to subject.csv from the data set dir
 subject_path  <- "Subject.csv"
 
@@ -144,7 +146,8 @@ attempts_grade_plot <- student_features %>%
   ggplot(aes(x = avg_attempts, y = x_grade)) +
   geom_point() + geom_smooth(method="lm")
   labs(x = "Average attempts", y = "Final grade")
-  
+model3 <- lm(x_grade~avg_attempts+per_CorrectEventually, data=student_features)
+
   
 percent_grade_plot <- student_features %>% 
   ggplot(aes(x = per_CorrectEventually, y = x_grade)) +
@@ -155,8 +158,12 @@ attempts_grade_plot
 percent_grade_plot
 s1 <- summary(model1)
 s2 <- summary(model2)
+s3 <- summary(model3)
 s1$r.squared # Correlation between average attempts and final grade
 s2$r.squared # Correlation between percent eventually correct and final grade
+s3$r.squared 
+
+# look at outliers 
 ```
 
 

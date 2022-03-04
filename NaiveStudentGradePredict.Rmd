@@ -50,12 +50,13 @@ View Table
 ```{r}
 
 train_subjectID_and_grades_data
+names(train_subjectID_and_grades_data)[names(train_subjectID_and_grades_data) == "X-Grade"] <- "x_grade"
 
 # here we separate the labels
-training_labels <- train_subjectID_and_grades_data["X-Grade"]
+training_labels <- train_subjectID_and_grades_data["x_grade"]
 student_id  <-  train_subjectID_and_grades_data["SubjectID"]
-training_labels
-student_id
+# training_labels
+# student_id
 ```
 
 <p>
@@ -115,12 +116,12 @@ Feature Extraction on the training data
 
 ```{r}
 # find the avg number of attempts 
-student_id <- student_id %>% 
+train_subjectID_and_grades_data <- train_subjectID_and_grades_data %>% 
   rowwise()  %>%
   mutate(avg_attempts = find_avg_attempts(SubjectID, early_dataset))
 
 # find the percent of time student gets the right answer, eventually
-student_id <- student_id %>% 
+train_subjectID_and_grades_data <- train_subjectID_and_grades_data %>% 
   rowwise()  %>%
   mutate(per_CorrectEventually = 
            find_percent_CorrectEventually(SubjectID,early_dataset))
@@ -131,22 +132,41 @@ student_id <- student_id %>%
 #            get_final_grade(SubjectID, train_subjectID_and_grades_data))
 
 
-student_features <- tibble(student_id)
-student_features <- select(student_features, -c(SubjectID))
+student_features <- tibble(train_subjectID_and_grades_data)
+# student_features <- select(student_features, -c(SubjectID))
 student_features
- # Ask Dr. Rivoire about this??
 
 ```
 ```{r}
-attempt_percent_plot <- student_features %>% 
-  ggplot(aes(x = avg_attempts, y = per_CorrectEventually)) +
-  geom_point() +
-  labs(x = "Average attempts", y = "% Correct Eventually")
-attempt_percent_plot
+model1 <- lm(avg_attempts~x_grade, data=student_features)
+model2 <- lm(per_CorrectEventually~x_grade, data = student_features)
+attempts_grade_plot <- student_features %>% 
+  ggplot(aes(x = avg_attempts, y = x_grade)) +
+  geom_point() + geom_smooth(method="lm")
+  labs(x = "Average attempts", y = "Final grade")
+  
+  
+percent_grade_plot <- student_features %>% 
+  ggplot(aes(x = per_CorrectEventually, y = x_grade)) +
+  geom_point() + geom_smooth(method="lm")
+  labs(x = "Percent correct eventually", y = "Final grade")
+  
+attempts_grade_plot
+percent_grade_plot
+s1 <- summary(model1)
+s2 <- summary(model2)
+s1$r.squared # Correlation between average attempts and final grade
+s2$r.squared # Correlation between percent eventually correct and final grade
 ```
+
+
 ```{r}
-model <- lm(avg_attempts~per_CorrectEventually, data=student_features)
-summary(model)
+
+```
+
+
+```{r}
+
 ```
 
 <p>

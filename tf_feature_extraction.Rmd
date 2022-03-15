@@ -1,0 +1,120 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+<p>TF extraction Created for the
+2nd Annual CSEDM Data Challenge - Track 2 </p>
+
+<p><b> Install/Importing ML Libraries </b></p>
+```{r}
+library(tidyverse)
+library(BBmisc)
+library(caret)
+library(tm)
+library(proxy)
+library(dplyr)
+```
+
+<p> Loading Student Training Data </P>
+```{r}
+# Main path to data set
+base_dir <- 
+  "/Users/jcalderonchavez/Documents/MachineLearning/Datasets/student_grad_pred/S19_Release_6_28_21.zip"
+
+# path to subject.csv from the data set dir
+subject_path  <- "Train/Data/LinkTables/Subject.csv"
+main_path  <- "Train/Data/MainTable.csv"
+codestates_path <- "Train/Data/CodeStates/CodeStates.csv"
+
+# combine paths
+train_subjectID_and_grades_path <- paste(base_dir, subject_path, sep="/")
+# read data from subject.csv
+train_subjectID_and_grades_data <- read_csv(train_subjectID_and_grades_path)
+
+# combine paths
+main_path <- paste(base_dir, main_path, sep="/")
+# read data from main
+main_data <- read_csv(main_path)
+# combine paths
+codestates_path <- paste(base_dir, codestates_path, sep="/")
+# read data from code states
+codestates_data <- read_csv(codestates_path)
+```
+
+<p> View Table </p>
+```{r}
+train_subjectID_and_grades_data
+main_data
+codestates_data
+
+names(train_subjectID_and_grades_data)[names(train_subjectID_and_grades_data) == "X-Grade"] <- "x_grade"
+
+# here we separate the labels
+training_labels <- train_subjectID_and_grades_data["x_grade"]
+student_id  <-  train_subjectID_and_grades_data["SubjectID"]
+```
+
+<p> TF-IDF Feature Extraction Algorithm </p>
+```{r}
+tf_student_code_submissions = function(
+    student_instance,
+    main_data,
+    codestates_data
+    ){
+  
+  # find code states ids that are associated to student id
+  student_main_data <- filter(main_data, SubjectID == student_instance)
+  student_main_data <- distinct(student_main_data["CodeStateID"]) 
+
+  # load all code submissions based on code state ids
+  code_sub <- 
+    filter(codestates_data,
+           codestates_data$CodeStateID %in% student_main_data$CodeStateID)
+  
+  code_sub <- code_sub["Code"]
+
+  # term freq matrix
+  code_corpus <-Corpus(VectorSource(code_sub$Code))
+  tdm <- TermDocumentMatrix(code_corpus)
+}
+```
+
+<p> code samp feature from struggling student </p>
+```{r}
+
+result <- 
+  tf_student_code_submissions("65be44ae7088566069cc3bef454174a7", main_data, codestates_data)  # 0.3600	
+
+result
+inspect(result[,]) # print
+
+freq=rowSums(as.matrix(result))
+high.freq=tail(sort(freq),n=15)
+hfp.df=as.data.frame(sort(high.freq))
+hfp.df$names <- rownames(hfp.df) 
+
+ggplot(hfp.df, aes(reorder(names,high.freq), high.freq)) +
+  geom_bar(stat="identity") + coord_flip() + 
+  xlab("Terms") + ylab("Frequency") +
+  ggtitle("Term frequencies")
+```
+<p> code samp feature from non-struggling student </p>
+```{r}
+
+result <- 
+  tf_student_code_submissions("d29af1fd577b037033dd1149e816d521", main_data, codestates_data)  # 0.9200
+result
+
+inspect(result[,]) # print
+
+freq=rowSums(as.matrix(result))
+high.freq=tail(sort(freq),n=15)
+hfp.df=as.data.frame(sort(high.freq))
+hfp.df$names <- rownames(hfp.df) 
+
+ggplot(hfp.df, aes(reorder(names,high.freq), high.freq)) +
+  geom_bar(stat="identity") + coord_flip() + 
+  xlab("Terms") + ylab("Frequency") +
+  ggtitle("Term frequencies")
+```

@@ -1,0 +1,142 @@
+---
+title: "Predict Student's Final Grade"
+output:
+  html_document:
+    df_print: paged
+---
+
+<p>
+Created by Jonathan Calderon Chavez for the 2nd Annual CSEDM Data Challenge - Track 2 <br> loosely based on Yang Azure's naive_model
+</p>
+
+<p>
+<b> Install/Importing ML Libraries </b>
+</p>
+
+```{r}
+### Install libraries one time on machine ###
+# install.packages("tidyverse")
+# install.packages("BBmisc")
+# install.packages("caret")
+```
+
+```{r}
+suppressWarnings(library(tidyverse))
+suppressWarnings(library(BBmisc))
+suppressWarnings(library(caret))
+```
+<p>
+Loading All Data
+</P>
+
+```{r}
+# Main path to data set
+personal_path <- "/Users/katiepell/school/cs496"
+base_dir <- "cs496-csedm-main"
+train_path <- "S19_Release_6_28_21.zip/Train" # Path to training data
+test_path <- "S19_Release_6_28_21.zip/Test" # Path to testing data
+subject_path <- "Data/LinkTables/Subject.csv"
+early_path <- "early.csv"
+late_path <- "late.csv"
+
+train_id_grade_path <- paste(personal_path, base_dir, train_path, subject_path, sep="/")
+test_id_grade_path <- paste(personal_path, base_dir, test_path, subject_path, sep="/")
+
+train_id_grade_data <- read_csv(train_id_grade_path)
+test_id_grade_data <- read_csv(test_id_grade_path)
+
+train_early_path <- paste(personal_path, base_dir, train_path, early_path, sep = "/")
+test_early_path <- paste(personal_path, base_dir, test_path, early_path, sep = "/")
+
+train_early_data <- read_csv(train_early_path)
+test_early_data <- read_csv(test_early_path)
+
+train_late_path <- paste(personal_path, base_dir, train_path, late_path, sep = "/")
+test_late_path <- paste(personal_path, base_dir, test_path, late_path, sep = "/")
+
+train_late_data <- read_csv(train_late_path)
+test_late_data <- read_csv(test_late_path)
+
+```
+
+<p>
+Hand Crafted Feature Extraction Algorithm
+</p>
+
+```{r}
+# Function to find each student's average number of attempts
+find_avg_attempts = function(student_instance, early_dataset){
+  
+  # This is get the all data related to the current student
+  first_half_data <- filter(early_dataset, SubjectID == student_instance)
+  
+  # find avg number of attempts
+  avg_attempts <- median(first_half_data$Attempts)
+}
+```
+
+```{r}
+# Function to find each student's percent correct eventually
+find_percent_CorrectEventually = function(student_instance, early_dataset){
+  
+  # This is get the all data related to the current student
+  first_half_data <- filter(early_dataset, SubjectID == student_instance) # All of this student's problem entries from the the early part of the semester
+  
+  # find percent of time student gets the right answer eventually
+  PerCorrectEventually <- mean(first_half_data$CorrectEventually) # Average number correct for all of this student's problems that are attempted
+}
+
+```
+
+<p>
+Feature Extraction on the training data
+</p>
+
+```{r}
+# Add a column with each student's average number of events
+agg_train_id_grade_data <- train_id_grade_data %>%
+  rowwise() %>%
+  mutate(avg_attempts = find_avg_attempts(SubjectID, train_early_data))
+
+# Add a column with each student's percent correct eventually
+agg_train_id_grade_data <- agg_train_id_grade_data %>%
+  rowwise() %>%
+  mutate(per_CorrectEventually = find_percent_CorrectEventually(SubjectID, train_early_data))
+
+names(agg_train_id_grade_data)[names(agg_train_id_grade_data) == "X-Grade"] <- "grade"
+names(agg_train_id_grade_data)[names(agg_train_id_grade_data) == "SubjectID"] <- "id"
+
+```
+
+
+
+```{r}
+# Linear models
+
+# Avg_attempts vs. final grade
+model1 <- lm(avg_attempts~grade, data=agg_train_id_grade_data)
+
+#Percent eventually correct vs. final grade
+model2 <- lm(per_CorrectEventually~grade, data = agg_train_id_grade_data)
+
+# Percent eventually correct AND average attempts vs. final grade
+model3 <- lm(grade~avg_attempts+per_CorrectEventually, data=agg_train_id_grade_data)
+
+attempts_grade_plot <- agg_train_id_grade_data %>% 
+  ggplot(aes(x = avg_attempts, y = grade)) +
+  geom_point() + geom_smooth(method="lm")
+  labs(x = "Average attempts", y = "Final grade")
+  
+percent_grade_plot <- agg_train_id_grade_data %>% 
+  ggplot(aes(x = per_CorrectEventually, y = grade)) +
+  geom_point() + geom_smooth(method="lm")
+  labs(x = "Percent correct eventually", y = "Final grade")
+  
+s1 <- summary(model1)
+s2 <- summary(model2)
+s3 <- summary(model3)
+s1$r.squared # Correlation between average attempts and final grade
+s2$r.squared # Correlation between percent eventually correct and final grade
+s3$r.squared
+
+```

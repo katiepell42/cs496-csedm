@@ -18,12 +18,18 @@ Created by Jonathan Calderon Chavez for the 2nd Annual CSEDM Data Challenge - Tr
 # install.packages("tidyverse")
 # install.packages("BBmisc")
 # install.packages("caret")
+# install.packages("ggvis")
+#install.packages("randomForest")
+#install.packages("caTools")
 ```
 
 ```{r}
 suppressWarnings(library(tidyverse))
 suppressWarnings(library(BBmisc))
 suppressWarnings(library(caret))
+suppressWarnings(library(ggvis))
+suppressWarnings(library(randomForest))
+suppressWarnings(library(caTools))
 ```
 <p>
 Loading All Data
@@ -105,6 +111,9 @@ agg_train_id_grade_data <- agg_train_id_grade_data %>%
 
 names(agg_train_id_grade_data)[names(agg_train_id_grade_data) == "X-Grade"] <- "grade"
 names(agg_train_id_grade_data)[names(agg_train_id_grade_data) == "SubjectID"] <- "id"
+# moving more variables to this dataset
+names(agg_train_id_grade_data)[names(agg_train_id_grade_data) == "AssignmentID"] <- "assignment_id"
+names(agg_train_id_grade_data)[names(agg_train_id_grade_data) == "ProblemID"] <- "problem_id"
 
 ```
 
@@ -140,3 +149,48 @@ s2$r.squared # Correlation between percent eventually correct and final grade
 s3$r.squared
 
 ```
+```{r}
+# these scatter plots are colored to differentiate problem/assignment number
+assignment_plot1 <- agg_train_id_grade_data %>% ggvis(~avg_attempts, ~grade, fill = ~assignment_id) %>% layer_points()
+assignment_plot1
+
+assignment_plot2 <- agg_train_id_grade_data %>% ggvis(~per_CorrectEventually, ~grade, fill = ~assignment_id) %>% layer_points()
+assignment_plot2
+
+
+problem_plot1 <- agg_train_id_grade_data %>% ggvis(~avg_attempts, ~grade, fill = ~problem_id) %>% layer_points()
+problem_plot1
+
+problem_plot2 <- agg_train_id_grade_data %>% ggvis(~per_CorrectEventually, ~grade, fill = ~problem_id) %>% layer_points()
+problem_plot2
+```
+
+
+Random Forests
+```{r} 
+
+# attempting to refactor grade data to pass or fail
+#data$num[data$num > 1] <- 1
+rf_data <- agg_train_id_grade_data
+
+rf_data$grade[rf_data$grade < 0.7] <- 0
+rf_data$grade[rf_data$grade >= 0.7] <- 1
+rf_data$grade = as.factor(rf_data$grade)
+summary(rf_data)
+
+```
+
+```{r}
+# creating a random forest
+head(rf_data)
+sapply(rf_data, class)
+summary(rf_data)
+
+rf <- randomForest(
+  grade ~ .,
+  data = rf_data
+)
+rf
+
+```
+

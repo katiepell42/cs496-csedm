@@ -1,0 +1,108 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+<p> TF extraction Created for the 2nd Annual CSEDM Data Challenge - Track 2</p>
+<p> <b> Install/Importing ML Libraries </b> </p>
+```{r}
+library(tidyverse)
+library(superml)
+library(caret)
+library(Metrics)
+library(dplyr)
+library(caTools)
+```
+<p> Loading Student Training Data </P>
+```{r message=FALSE}
+# path to subject.csv from the data set dir
+base_dir <- "/Users/jcalderonchavez/Documents/MachineLearning/Datasets/student_grad_pred/S19_Release_6_28_21.zip"
+
+train_subject_path  <- paste(base_dir, "Train/Data/LinkTables/Subject.csv", sep="/")
+train_main_path  <- paste(base_dir, "Train/Data/MainTable.csv", sep="/")
+train_codestates_path <- paste(base_dir, "Train/Data/CodeStates/CodeStates.csv", sep="/")
+train_early_path <- paste(base_dir, "Train/early.csv", sep="/")
+
+train_stud_id_grades_data <- read_csv(train_subject_path)
+train_stud_id_grades_data <- as.tibble(distinct(train_stud_id_grades_data, SubjectID, .keep_all = TRUE))
+train_main_data <- read_csv(train_main_path)
+train_codestates_data <- read_csv(train_codestates_path)
+train_early_data <- read_csv(train_early_path)
+train_stud_id_grades_data
+```
+<p> Loading Student Testing Data </P>
+```{r message=FALSE}
+test_subject_path  <- paste(base_dir, "Test/Data/LinkTables/Subject.csv", sep="/")
+test_main_path  <- paste(base_dir, "Test/Data/MainTable.csv", sep="/")
+test_codestates_path <- paste(base_dir, "Test/Data/CodeStates/CodeStates.csv", sep="/")
+test_early_path <- paste(base_dir, "Test/early.csv", sep="/")
+
+test_stud_id_grades_data <- read_csv(test_subject_path)
+test_stud_id_grades_data <- as.tibble(distinct(test_stud_id_grades_data, SubjectID, .keep_all = TRUE))
+test_main_data <- read_csv(test_main_path)
+test_codestates_data <- read_csv(test_codestates_path)
+test_early_data <- read_csv(test_early_path)
+```
+<p> Extract Features from the Training data set and Testing data set </p>
+```{r}
+source("nlp_feature_extraction.R")
+
+# set tokenizer
+train_tokenizer <- set_tokenizer(train_codestates_data["Code"], 10) 
+
+train_dataset_features <- extract_features_dataset(train_stud_id_grades_data,
+                                                   train_tokenizer,
+                                                   train_main_data,
+                                                   train_early_data,
+                                                   train_codestates_data)
+
+train_dataset_features$x_Grade <- train_stud_id_grades_data$"X-Grade"
+train_dataset_features
+
+test_dataset_features <- extract_features_dataset(test_stud_id_grades_data,
+                                                  train_tokenizer,
+                                                  test_main_data,
+                                                  test_early_data,
+                                                  test_codestates_data)
+# small sanity check
+dim(train_dataset_features)
+dim(test_dataset_features)
+```
+```{r}
+train_tokenizer$transform(c("if (str.indexOf(word) != -1) x = str.return y;"))
+```
+
+<p> k-nearest neighbors regression </p>
+```{r}
+msefunction<-function(data, lev=NULL, model=NULL){   # metric 
+  require(Metrics)
+  out<-mse(data$obs, data$pred)
+  names(out) <- "MSE"
+  out
+}
+
+ctrl <- trainControl(   # cross validation
+  method = "cv",
+  number = 10,
+  summaryFunction = msefunction
+)
+
+tuneGrid <- expand.grid(    # fine tune-ing
+  k = seq(1, 50, by = 1)
+)
+
+set.seed(1)
+Knn_model <- train(
+  x_Grade ~ .,
+  data = train_dataset_features,
+  method = 'knn',
+  preProcess = c("center", "scale"),
+  tuneGrid = tuneGrid,
+  metric = "MSE",
+  maximize = FALSE,
+  trControl = ctrl
+)
+
+Knn_model
+plot(Knn_model)
+```
+

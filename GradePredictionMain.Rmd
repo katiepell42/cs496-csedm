@@ -226,5 +226,15 @@ plot(rf_regression)
 pred_rf <- predict(rf_regression, rf_test_data)
 summary(pred_rf)
 ```
+Writing to a file named prediction.csv
+```{r}
+# this creates a new file and writes the predicted grades to it
+write.csv(pred_rf, "prediction.csv", row.names=FALSE)
+# currently the column is titled 'x' and I can't figure out how to change that
+
+```
+
+
+
 
 

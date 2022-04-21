@@ -117,6 +117,24 @@ names(agg_train_id_grade_data)[names(agg_train_id_grade_data) == "ProblemID"] <-
 
 ```
 
+```{r}
+# create similar test data as train data above
+
+merged_data_test <-  merge(test_id_grade_data, test_early_data, by= "SubjectID")
+
+agg_test_id_grade_data <- merged_data_test %>%
+  rowwise() %>%
+  mutate(avg_attempts = find_avg_attempts(SubjectID, test_early_data))
+
+agg_test_id_grade_data <- agg_test_id_grade_data %>%
+  rowwise() %>%
+  mutate(per_CorrectEventually = find_percent_CorrectEventually(SubjectID, test_early_data))
+
+names(agg_test_id_grade_data)[names(agg_test_id_grade_data) == "SubjectID"] <- "id"
+names(agg_test_id_grade_data)[names(agg_test_id_grade_data) == "AssignmentID"] <- "assignment_id"
+names(agg_test_id_grade_data)[names(agg_test_id_grade_data) == "ProblemID"] <- "problem_id"
+
+```
 
 
 ```{r}
@@ -173,11 +191,21 @@ Random Forests
 #data$num[data$num > 1] <- 1
 rf_data <- agg_train_id_grade_data
 
-rf_data$grade[rf_data$grade < 0.7] <- 0
-rf_data$grade[rf_data$grade >= 0.7] <- 1
-rf_data$grade = as.factor(rf_data$grade)
+#rf_data$grade[rf_data$grade < 0.7] <- 0
+#rf_data$grade[rf_data$grade >= 0.7] <- 1
+#rf_data$grade = as.factor(rf_data$grade)
+rf_data$assignment_id = as.factor(rf_data$assignment_id)
+rf_data$problem_id = as.factor(rf_data$problem_id)
 summary(rf_data)
 
+```
+
+```{r}
+rf_test_data <- agg_test_id_grade_data
+
+rf_test_data$assignment_id = as.factor(rf_test_data$assignment_id)
+rf_test_data$problem_id = as.factor(rf_test_data$problem_id)
+summary(rf_test_data)
 ```
 
 ```{r}
@@ -185,12 +213,18 @@ summary(rf_data)
 head(rf_data)
 sapply(rf_data, class)
 summary(rf_data)
+```
+```{r}
+rf_regression <-  randomForest(grade ~ ., data = rf_data, ntree=500, mtry = 8, importance = TRUE, na.action = na.omit)
 
-rf <- randomForest(
-  grade ~ .,
-  data = rf_data
-)
-rf
+print(rf_regression)
+plot(rf_regression)
 
 ```
+
+```{r}
+pred_rf <- predict(rf_regression, rf_test_data)
+summary(pred_rf)
+```
+
 

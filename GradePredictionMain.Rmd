@@ -234,6 +234,18 @@ write.csv(pred_rf, "prediction.csv", row.names=FALSE)
 
 ```
 
+```{r}
+# merge predictions with student id number and write to prediction.csv
+end_data <- rf_test_data[,c('id')]
+end_data['predictions'] = pred_rf
+write.csv(end_data, 'prediction.csv', row.names = FALSE)
+
+# get only unique values(so one obs per student) and write to unique.csv
+unique_values <- unique(end_data)
+write.csv(unique_values, 'unique.csv', row.names = FALSE)
+
+```
+
 
 
 

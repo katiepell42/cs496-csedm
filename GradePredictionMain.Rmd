@@ -5,16 +5,15 @@ output:
     df_print: paged
 ---
 
-<p>
-Created by Jonathan Calderon Chavez for the 2nd Annual CSEDM Data Challenge - Track 2 <br> loosely based on Yang Azure's naive_model
-</p>
+<h2>
+Created for the <a href="https://sites.google.com/ncsu.edu/csedm-dc-2021/home">2nd CSEDM Data Challenge</a>
+</h2>
 
-<p>
-<b> Install/Importing ML Libraries </b>
-</p>
-
+<h3>
+  Installing libraries
+</h3>
+<p>This step is only necessary the first time the file is run on a machine.</p>
 ```{r}
-### Install libraries one time on machine ###
 # install.packages("tidyverse")
 # install.packages("BBmisc")
 # install.packages("caret")
@@ -23,20 +22,19 @@ Created by Jonathan Calderon Chavez for the 2nd Annual CSEDM Data Challenge - Tr
 #install.packages("caTools")
 ```
 
-```{r}
-suppressWarnings(library(tidyverse))
-suppressWarnings(library(BBmisc))
-suppressWarnings(library(caret))
-suppressWarnings(library(ggvis))
-suppressWarnings(library(randomForest))
-suppressWarnings(library(caTools))
+<h3> Importing libraries </h3>
+```{r, message=FALSE}
+library(tidyverse)
+library(BBmisc)
+library(caret)
+library(ggvis)
+library(randomForest)
+library(caTools)
 ```
-<p>
-Loading All Data
-</P>
 
-```{r}
-# Main path to data set
+<h3>Loading All Data</h3>
+<p>personal_path will need to be changed to match local machine filepath</p>
+```{r, message=FALSE}
 personal_path <- "/Users/katiepell/school/cs496"
 base_dir <- "cs496-csedm-main"
 train_path <- "S19_Release_6_28_21.zip/Train" # Path to training data
@@ -65,12 +63,8 @@ test_late_data <- read_csv(test_late_path)
 
 ```
 
-<p>
-Hand Crafted Feature Extraction Algorithm
-</p>
-
-```{r}
-# Function to find each student's average number of attempts
+<p>Function to find each student's average number of attempts</p>
+```{r, message=FALSE}
 find_avg_attempts = function(student_instance, early_dataset){
   
   # This is get the all data related to the current student
@@ -81,7 +75,7 @@ find_avg_attempts = function(student_instance, early_dataset){
 }
 ```
 
-```{r}
+```{r, message=FALSE}
 # Function to find each student's percent correct eventually
 find_percent_CorrectEventually = function(student_instance, early_dataset){
   
@@ -98,9 +92,12 @@ find_percent_CorrectEventually = function(student_instance, early_dataset){
 Feature Extraction on the training data
 </p>
 
-```{r}
-# Add a column with each student's average number of events
-agg_train_id_grade_data <- train_id_grade_data %>%
+```{r, message=FALSE}
+# ***** I THINK THIS NEEDS TO BE "MERGED" WITH THE APPROPRIATE OTHER DATASET... *****
+merged_data_train <- merge(train_id_grade_data, train_early_data, by= "SubjectID")
+
+# Add a column with each student's average number of attempts
+agg_train_id_grade_data <- merged_data_train %>%
   rowwise() %>%
   mutate(avg_attempts = find_avg_attempts(SubjectID, train_early_data))
 
@@ -108,37 +105,38 @@ agg_train_id_grade_data <- train_id_grade_data %>%
 agg_train_id_grade_data <- agg_train_id_grade_data %>%
   rowwise() %>%
   mutate(per_CorrectEventually = find_percent_CorrectEventually(SubjectID, train_early_data))
-
-names(agg_train_id_grade_data)[names(agg_train_id_grade_data) == "X-Grade"] <- "grade"
-names(agg_train_id_grade_data)[names(agg_train_id_grade_data) == "SubjectID"] <- "id"
-# moving more variables to this dataset
-names(agg_train_id_grade_data)[names(agg_train_id_grade_data) == "AssignmentID"] <- "assignment_id"
-names(agg_train_id_grade_data)[names(agg_train_id_grade_data) == "ProblemID"] <- "problem_id"
-
 ```
 
-```{r}
-# create similar test data as train data above
+```{r, message=FALSE}
+# Change names for simplicity
+names(agg_train_id_grade_data)[names(agg_train_id_grade_data) == "X-Grade"] <- "grade"
+names(agg_train_id_grade_data)[names(agg_train_id_grade_data) == "SubjectID"] <- "id"
+names(agg_train_id_grade_data)[names(agg_train_id_grade_data) == "AssignmentID"] <- "assignment_id"
+names(agg_train_id_grade_data)[names(agg_train_id_grade_data) == "ProblemID"] <- "problem_id"
+```
 
-merged_data_test <-  merge(test_id_grade_data, test_early_data, by= "SubjectID")
+```{r, message=FALSE}
+# Format test data similar to above format of training data
+merged_data_test <- merge(test_id_grade_data, test_early_data, by= "SubjectID")
 
-agg_test_id_grade_data <- merged_data_test %>%
+agg_test_id_grade_data <- merged_data_test %>% # Add the attempt column to the test data
   rowwise() %>%
   mutate(avg_attempts = find_avg_attempts(SubjectID, test_early_data))
 
-agg_test_id_grade_data <- agg_test_id_grade_data %>%
+agg_test_id_grade_data <- agg_test_id_grade_data %>% # Add the percentCorrect column to the test data
   rowwise() %>%
   mutate(per_CorrectEventually = find_percent_CorrectEventually(SubjectID, test_early_data))
+```
 
+```{r, message=FALSE}
+# Change names for simplicity
 names(agg_test_id_grade_data)[names(agg_test_id_grade_data) == "SubjectID"] <- "id"
 names(agg_test_id_grade_data)[names(agg_test_id_grade_data) == "AssignmentID"] <- "assignment_id"
 names(agg_test_id_grade_data)[names(agg_test_id_grade_data) == "ProblemID"] <- "problem_id"
-
 ```
 
-
-```{r}
-# Linear models
+<p>Linear Models</p>
+```{r, message=FALSE}
 
 # Avg_attempts vs. final grade
 model1 <- lm(avg_attempts~grade, data=agg_train_id_grade_data)
@@ -164,10 +162,12 @@ s2 <- summary(model2)
 s3 <- summary(model3)
 s1$r.squared # Correlation between average attempts and final grade
 s2$r.squared # Correlation between percent eventually correct and final grade
-s3$r.squared
+s3$r.squared # Correlation between both factors and final grade
 
 ```
-```{r}
+
+
+```{r, message=FALSE}
 # these scatter plots are colored to differentiate problem/assignment number
 assignment_plot1 <- agg_train_id_grade_data %>% ggvis(~avg_attempts, ~grade, fill = ~assignment_id) %>% layer_points()
 assignment_plot1
@@ -183,70 +183,68 @@ problem_plot2 <- agg_train_id_grade_data %>% ggvis(~per_CorrectEventually, ~grad
 problem_plot2
 ```
 
+<p>Random Forest Regression Models</p>
 
-Random Forests
-```{r} 
-
-# attempting to refactor grade data to pass or fail
-#data$num[data$num > 1] <- 1
-rf_data <- agg_train_id_grade_data
-
-#rf_data$grade[rf_data$grade < 0.7] <- 0
-#rf_data$grade[rf_data$grade >= 0.7] <- 1
-#rf_data$grade = as.factor(rf_data$grade)
-rf_data$assignment_id = as.factor(rf_data$assignment_id)
-rf_data$problem_id = as.factor(rf_data$problem_id)
-summary(rf_data)
-
+```{r, message=FALSE} 
+# Create a random forest with the training data
+rf_train_data <- agg_train_id_grade_data
+rf_train_data$assignment_id = as.factor(rf_train_data$assignment_id) # Create assignment ID as a factor
+rf_train_data$problem_id = as.factor(rf_train_data$problem_id) # Create problem ID as a factor
+# summary(rf_train_data)
 ```
 
-```{r}
-rf_test_data <- agg_test_id_grade_data
+```{r, message=FALSE}
 
+# Create a random forest with the testing data
+rf_test_data <- agg_test_id_grade_data
 rf_test_data$assignment_id = as.factor(rf_test_data$assignment_id)
 rf_test_data$problem_id = as.factor(rf_test_data$problem_id)
-summary(rf_test_data)
+# summary(rf_test_data)
 ```
 
-```{r}
+```{r, message=FALSE}
 # creating a random forest
-head(rf_data)
-sapply(rf_data, class)
-summary(rf_data)
+head(rf_train_data)
+sapply(rf_train_data, class)
+summary(rf_train_data)
 ```
-```{r}
-rf_regression <-  randomForest(grade ~ ., data = rf_data, ntree=500, mtry = 8, importance = TRUE, na.action = na.omit)
+```{r, message=FALSE}
+# Perform random forest regression on training data
+rf_regression <- randomForest(grade ~ ., data = rf_train_data, ntree=500, mtry = 8, importance = TRUE, na.action = na.omit)
 
 print(rf_regression)
-plot(rf_regression)
+# plot(rf_regression)
 
 ```
 
-```{r}
+```{r, message=FALSE}
 pred_rf <- predict(rf_regression, rf_test_data)
 summary(pred_rf)
 ```
-Writing to a file named prediction.csv
-```{r}
-# this creates a new file and writes the predicted grades to it
+<p>Writing predictions to a file</p>
+```{r, message=FALSE}
+# This creates a new file called prediction.csv and writes the predicted grades to it
 write.csv(pred_rf, "prediction.csv", row.names=FALSE)
 # currently the column is titled 'x' and I can't figure out how to change that
 
 ```
 
-```{r}
-# merge predictions with student id number and write to prediction.csv
+```{r, message=FALSE}
+# Merge predictions on student id number and write to prediction.csv
 end_data <- rf_test_data[,c('id')]
 end_data['predictions'] = pred_rf
 write.csv(end_data, 'prediction.csv', row.names = FALSE)
 
-# get only unique values(so one obs per student) and write to unique.csv
+# Get only unique values (one observation per student) and write to unique.csv
 unique_values <- unique(end_data)
 write.csv(unique_values, 'unique.csv', row.names = FALSE)
-
 ```
 
 
-
+<h3>Troubleshooting</h3>
+<p>
+<b>Q:</b> I am getting an error that "assignment-id is not located in agg_train_id_grade_data"<br>
+<b>A:</b> Confirm that the downloaded folder is named properly, "cs496-csedm-main".
+</p>
 
 

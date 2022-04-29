@@ -229,15 +229,22 @@ write.csv(pred_rf, "prediction.csv", row.names=FALSE)
 
 ```
 
-```{r, message=FALSE}
-# Merge predictions on student id number and write to prediction.csv
+```{r, message = FALSE}
 end_data <- rf_test_data[,c('id')]
-end_data['predictions'] = pred_rf
-write.csv(end_data, 'prediction.csv', row.names = FALSE)
+end_data['grade'] = pred_rf
 
-# Get only unique values (one observation per student) and write to unique.csv
-unique_values <- unique(end_data)
-write.csv(unique_values, 'unique.csv', row.names = FALSE)
+end_data$Mean <- with(end_data, ave(end_data$grade, id, FUN=mean))
+end_data <- subset(end_data, select = -c(grade))
+
+unique_values <- end_data[!duplicated(end_data$id), ]
+names(unique_values)[names(unique_values) == "id"] <- "SubjectID"
+names(unique_values)[names(unique_values) == "Mean"] <- "X-Grade"
+```
+}
+```{r}
+# merge predictions with student id number and write to prediction.csv
+
+write.csv(unique_values, 'predictions.csv', row.names = FALSE)
 ```
 
 
